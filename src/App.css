@@ -1,5 +1,6 @@
 .App {
   text-align: center;
+  background: url("./earth21.png") no-repeat;
 }
 
 .Header-btns {
@@ -24,7 +25,6 @@
 }
 
 .App-header {
-  background-color: #040765;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
