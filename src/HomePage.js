@@ -3,7 +3,19 @@ import search from './baseline-search-24px.svg';
 import { Button, InputGroup, InputGroupAddon, InputGroupText, Input,
   Modal, ModalHeader, ModalBody, ModalFooter,
   Form, FormGroup, Label,
+  Dropdown, DropdownToggle, DropdownMenu, DropdownItem,
 } from 'reactstrap';
+
+const diplomaTypes = [
+  {
+    id: 'certification',
+    name: 'Certification',
+  },
+  {
+    id: 'degree',
+    name: 'Degree',
+  },
+];
 
 class HomePage extends Component {
   constructor() {
@@ -20,12 +32,18 @@ class HomePage extends Component {
       modalRegistry: false,
       organizationName: '',
       organizationCode: '',
+      dropdownOpen: false,
+      selectedDiplomaTypeId: diplomaTypes[0].id,
     };
   }
 
   toggleModalSubmit() {
     this.setState(prevState => ({ modalSubmit: ! prevState.modalSubmit }));
   }
+
+  toggleDropdown = () => {
+    this.setState(prevState => ({ dropdownOpen: ! prevState.dropdownOpen }));
+  };
 
   toggleModalRegistry() {
     this.setState(prevState => ({
@@ -68,6 +86,11 @@ class HomePage extends Component {
     this.setState({ organizationCode: e.target.value });
   };
 
+  handleSelectDiplomaType = (diplomaTypeId) => {
+    console.log('handleSelectDiplomaType:', diplomaTypeId);
+    this.setState({ selectedDiplomaTypeId: diplomaTypeId });
+  };
+
   renderModalRegistry() {
     return (
       <Modal isOpen={this.state.modalRegistry} toggle={this.toggleModalRegistry}>
@@ -94,9 +117,42 @@ class HomePage extends Component {
 
   renderModalSubmit() {
     return <Modal isOpen={this.state.modalSubmit} toggle={this.toggleModalSubmit}>
-      <ModalHeader toggle={this.toggleModalSubmit}>Modal title</ModalHeader>
+      <ModalHeader toggle={this.toggleModalSubmit}>Submit new Diploma</ModalHeader>
       <ModalBody>
-        Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        <Form>
+          <FormGroup>
+            <Label for="organizationName">Full name</Label>
+            <Input onChange={this.handleOrganizationNameChange} type="text" name="organizationName" id="organizationName" placeholder="Full name?" />
+          </FormGroup>
+          <FormGroup>
+            <Label for="organizationCode">Birth day</Label>
+            <Input onChange={this.handleOrganizationCodeChange} type="text" name="organizationCode" id="organizationCode" placeholder="Birth day?" />
+          </FormGroup>
+          <FormGroup>
+            <Label for="organizationCode">Release date</Label>
+            <Input onChange={this.handleOrganizationCodeChange} type="text" name="organizationCode" id="organizationCode" placeholder="Release date?" />
+          </FormGroup>
+          <FormGroup>
+            <Label for="organizationCode">Diploma type</Label>
+            <Dropdown isOpen={this.state.dropdownOpen} toggle={this.toggleDropdown}>
+              <DropdownToggle caret>
+                Diploma types
+              </DropdownToggle>
+              <DropdownMenu>
+                {
+                  diplomaTypes.map(diplomaType => (
+                    <DropdownItem
+                      key={diplomaType.id}
+                      active={this.state.selectedDiplomaTypeId === diplomaType.id}
+                      onClick={this.handleSelectDiplomaType.bind(this, diplomaType.id)}>
+                      {diplomaType.name}
+                    </DropdownItem>
+                  ))
+                }
+              </DropdownMenu>
+            </Dropdown>
+          </FormGroup>
+        </Form>
       </ModalBody>
       <ModalFooter>
         <Button color="primary" onClick={this.handleSubmit}>Submit</Button>{' '}
@@ -109,7 +165,7 @@ class HomePage extends Component {
     return (
       <header className="App-header">
         <div className="Header-btns">
-          <Button outline color="secondary" size="sm" className="Header-btn" onClick={this.toggleModalSubmit}>Submit</Button>
+          <Button outline color="secondary" size="sm" className="Header-btn" onClick={this.toggleModalSubmit}>Submit new Diploma</Button>
           <Button color="primary" size="sm" className="Header-btn" onClick={this.handleRegistry}>Registry</Button>
         </div>
         <img src="https://knownetwork.io/images/logo-white2x.png" className="App-logo" alt="logo" />
