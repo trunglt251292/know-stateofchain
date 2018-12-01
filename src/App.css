@@ -40,6 +40,7 @@
 
 .Search-icon {
   margin-right: 20px;
+  cursor: pointer;
 }
 
 .App-link {
@@ -47,8 +48,8 @@
   color: #61dafb;
 }
 
-.img-btn {
-  cursor: pointer;
+.copy-right-text {
+  color: #ffffff;
 }
 
 @keyframes App-logo-spin {
