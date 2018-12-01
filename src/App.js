@@ -11,6 +11,9 @@ class App extends Component {
           <div>
             <Route exact path="/" component={HomePage} />
           </div>
+          <footer>
+            <span className="copy-right-text">KnowChain, Copyright 2018</span>
+          </footer>
         </div>
       </Router>
     );

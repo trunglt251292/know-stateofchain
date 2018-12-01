@@ -3,8 +3,9 @@ import search from './baseline-search-24px.svg';
 import { Button, InputGroup, InputGroupAddon, InputGroupText, Input,
   Modal, ModalHeader, ModalBody, ModalFooter,
   Form, FormGroup, Label,
-  Dropdown, DropdownToggle, DropdownMenu, DropdownItem,
+  Dropdown, DropdownToggle, DropdownMenu, DropdownItem, Table,
 } from 'reactstrap';
+import { searchDiploma } from "./web3Util";
 
 const diplomaTypes = [
   {
@@ -33,7 +34,13 @@ class HomePage extends Component {
       organizationName: '',
       organizationCode: '',
       dropdownOpen: false,
-      selectedDiplomaTypeId: diplomaTypes[0].id,
+      selectedDiplomaTypeId: diplomaTypes[0].id, // select first item
+      selectedDiplomaFullName: '',
+      selectedDiplomaBirthDay: '',
+      selectedDiplomaReleaseDate: '',
+      modalDiplomaNotFound: false,
+      modalDiplomaFound: false,
+      currentDiploma: null,
     };
   }
 
@@ -53,6 +60,14 @@ class HomePage extends Component {
     }));
   }
 
+  toggleModalDiplomaNotFound = () => {
+    this.setState(prevState => ({ modalDiplomaNotFound: ! prevState.modalDiplomaNotFound }));
+  };
+
+  toggleModalDiplomaFound = (currentDiploma) => {
+    this.setState(prevState => ({ modalDiplomaFound: ! prevState.modalDiplomaFound, currentDiploma: currentDiploma }));
+  };
+
   handleSubmit() {
     console.log('handleSubmit');
     this.toggleModalSubmit();
@@ -65,6 +80,13 @@ class HomePage extends Component {
 
   handleSearch() {
     console.log('handleSearch', this.state.searchContent);
+    searchDiploma(this.state.searchContent).then( diploma => {
+      console.log('diploma found:', diploma);
+      this.toggleModalDiplomaFound(diploma);
+    }).catch(error => {
+      console.log('diploma not found:', error);
+      this.toggleModalDiplomaNotFound();
+    });
   };
 
   handleSearchChange(e) {
@@ -115,25 +137,37 @@ class HomePage extends Component {
     );
   }
 
+  handleDiplomaFullNameChange = (e) => {
+    this.setState({ selectedDiplomaFullName: e.target.value });
+  };
+
+  handleDiplomaBirthDayChange = (e) => {
+    this.setState({ selectedDiplomaBirthDay: e.target.value });
+  };
+
+  handleDiplomaReleaseDateChange = (e) => {
+    this.setState({ selectedDiplomaReleaseDate: e.target.value });
+  };
+
   renderModalSubmit() {
     return <Modal isOpen={this.state.modalSubmit} toggle={this.toggleModalSubmit}>
       <ModalHeader toggle={this.toggleModalSubmit}>Submit new Diploma</ModalHeader>
       <ModalBody>
         <Form>
           <FormGroup>
-            <Label for="organizationName">Full name</Label>
-            <Input onChange={this.handleOrganizationNameChange} type="text" name="organizationName" id="organizationName" placeholder="Full name?" />
+            <Label for="diplomaFullName">Full name</Label>
+            <Input onChange={this.handleDiplomaFullNameChange} type="text" name="diplomaFullName" id="diplomaFullName" placeholder="Full name?" />
           </FormGroup>
           <FormGroup>
-            <Label for="organizationCode">Birth day</Label>
-            <Input onChange={this.handleOrganizationCodeChange} type="text" name="organizationCode" id="organizationCode" placeholder="Birth day?" />
+            <Label for="diplomaBirthDay">Birth day</Label>
+            <Input onChange={this.handleDiplomaBirthDayChange} type="text" name="diplomaBirthDay" id="diplomaBirthDay" placeholder="Birth day?" />
           </FormGroup>
           <FormGroup>
-            <Label for="organizationCode">Release date</Label>
-            <Input onChange={this.handleOrganizationCodeChange} type="text" name="organizationCode" id="organizationCode" placeholder="Release date?" />
+            <Label for="diplomaReleaseDate">Release date</Label>
+            <Input onChange={this.handleDiplomaReleaseDateChange} type="text" name="diplomaReleaseDate" id="diplomaReleaseDate" placeholder="Release date?" />
           </FormGroup>
           <FormGroup>
-            <Label for="organizationCode">Diploma type</Label>
+            <Label for="diplomaType">Diploma type</Label>
             <Dropdown isOpen={this.state.dropdownOpen} toggle={this.toggleDropdown}>
               <DropdownToggle caret>
                 Diploma types
@@ -161,6 +195,60 @@ class HomePage extends Component {
     </Modal>;
   }
 
+  renderModalDiplomaFound() {
+    const { currentDiploma } = this.state;
+    if ( ! currentDiploma ) {
+      console.log('currentDiploma is not defined');
+      return null;
+    }
+    return <Modal isOpen={this.state.modalDiplomaFound} toggle={this.toggleModalDiplomaFound}>
+      <ModalHeader toggle={this.toggleModalDiplomaFound}>Diploma details</ModalHeader>
+      <ModalBody>
+        <Table>
+          <tbody>
+            <tr>
+              <th scope="row">From:</th>
+              <td>{currentDiploma.organizer}</td>
+            </tr>
+            <tr>
+              <th scope="row">For:</th>
+              <td>{currentDiploma.fullName}</td>
+            </tr>
+            <tr>
+              <th scope="row">Birth day:</th>
+              <td>{currentDiploma.birthDay}</td>
+            </tr>
+            <tr>
+              <th scope="row">Release date:</th>
+              <td>{currentDiploma.date}</td>
+            </tr>
+            <tr>
+              <th scope="row">Type:</th>
+              <td>{currentDiploma._type}</td>
+            </tr>
+          </tbody>
+        </Table>
+      </ModalBody>
+      <ModalFooter>
+        <Button color="secondary" onClick={this.toggleModalDiplomaFound}>Ok</Button>
+      </ModalFooter>
+    </Modal>;
+  }
+
+  renderNotFoundDiploma() {
+    return (
+      <Modal isOpen={this.state.modalDiplomaNotFound} toggle={this.toggleModalDiplomaNotFound}>
+        <ModalHeader toggle={this.toggleModalDiplomaNotFound}>Diploma not found</ModalHeader>
+        <ModalBody>
+          We cannot find your diploma by this id, please check your id is correct and try again
+        </ModalBody>
+        <ModalFooter>
+          <Button color="secondary" onClick={this.toggleModalDiplomaNotFound}>Ok</Button>
+        </ModalFooter>
+      </Modal>
+    );
+  }
+
   render() {
     return (
       <header className="App-header">
@@ -171,20 +259,26 @@ class HomePage extends Component {
         <img src="https://knownetwork.io/images/logo-white2x.png" className="App-logo" alt="logo" />
         <InputGroup className="Search-bar">
           <Input value={this.state.searchContent} onKeyPress={this.handleKeyPress} onChange={this.handleSearchChange}/>
-          <InputGroupAddon addonType="append" className="Search-icon">
+          <InputGroupAddon onClick={this.handleSearch} addonType="append" className="Search-icon">
             <InputGroupText>
-              <img src={search} alt="Search icon" onClick={this.handleSearch} className="img-btn"/>
+              <img src={search} alt="Search icon"/>
             </InputGroupText>
           </InputGroupAddon>
         </InputGroup>
         <span className="App-link">
-          Distributed Certifications and Degrees
+          Search for Distributed Certifications and Degrees
         </span>
         {
           this.renderModalSubmit()
         }
         {
           this.renderModalRegistry()
+        }
+        {
+          this.renderNotFoundDiploma()
+        }
+        {
+          this.renderModalDiplomaFound()
         }
       </header>
     );
