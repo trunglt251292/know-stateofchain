@@ -1,34 +1,47 @@
 import React, { Component } from 'react';
 import Web3 from 'web3';
 import search from './baseline-search-24px.svg';
-import { Button, InputGroup, InputGroupAddon, InputGroupText, Input,
+import {
+  Button, InputGroup, InputGroupAddon, InputGroupText, Input,
   Modal, ModalHeader, ModalBody, ModalFooter,
   Form, FormGroup, Label,
   Dropdown, DropdownToggle, DropdownMenu, DropdownItem, Table,
 } from 'reactstrap';
 import { searchDiploma } from "./web3Util";
-const ABI = require('./ABI');
-const addressContract = '0xAf948b545C4721853EB01d9Ab81fE24E6f925695';
 
-const diplomaTypes = [
-  {
-    id: 'certification',
-    name: 'Certification',
-  },
-  {
-    id: 'degree',
-    name: 'Degree',
-  },
-];
+const ABI = require('./ABI');
+const addressContract = '0x5f303d3951602ed296053b60e62f79605707664a';
+
+const diplomaTypes = {
+  Certificate: 0,
+  Bachelor: 1,
+  Master: 2,
+  Doctorate: 3
+};
+
+const diplomaRank = {
+  Excellent: 0,
+  Good: 1,
+  Fair: 2
+};
+
+const diplomaStatus = {
+  Activated: 0,
+  Expired: 1,
+  Destroyed: 2
+};
 
 class HomePage extends Component {
-  constructor() {
+  constructor () {
     super();
     this.handleSubmitButton = this.handleSubmitButton.bind(this);
     this.handleRegistryButton = this.handleRegistryButton.bind(this);
     this.handleButtonSubmit = this.handleButtonSubmit.bind(this);
     this.handleButtonRegistry = this.handleButtonRegistry.bind(this);
     this.handleSearch = this.handleSearch.bind(this);
+    this.handleDiplomaIdDegreeChange = this.handleDiplomaIdDegreeChange.bind(this);
+    this.handleDiplomaStatusChange = this.handleDiplomaStatusChange.bind(this);
+    this.handleDiplomaRankChange = this.handleDiplomaRankChange.bind(this);
     this.handleSearchChange = this.handleSearchChange.bind(this);
     this.toggleModalSubmit = this.toggleModalSubmit.bind(this);
     this.toggleModalRegistry = this.toggleModalRegistry.bind(this);
@@ -39,100 +52,176 @@ class HomePage extends Component {
       organizationName: '',
       organizationCode: '',
       dropdownOpen: false,
-      selectedDiplomaTypeId: diplomaTypes[0].id, // select first item
+      selectedDiplomaTypeId: diplomaTypes['Certificate'], // select first item
+      diplomaRank: diplomaRank['Excellent'],
+      diplomaStatus: diplomaStatus['Activated'],
+      diplomaStatus1: diplomaStatus['Activated'],
       selectedDiplomaFullName: '',
       selectedDiplomaBirthDay: '',
       selectedDiplomaReleaseDate: '',
       modalDiplomaNotFound: false,
       modalDiplomaFound: false,
       currentDiploma: null,
+      codeDiploma: '',
+      rank: '',
     };
     this.web3 = {};
   }
-  handleSubmitButton(){
+
+  async handleSubmitButton () {
     let Contract = new this.web3.eth.Contract(ABI.result, addressContract);
-    console.log(Contract.methods);
-    let data = Contract.methods.addNewDiploma('asdasd','25/12/1992','25/12/2010', '1','1').encodeABI();
-    this.web3.eth.call({
-      to:addressContract,
-      data
-    }).then(console.log);
-  }
-  handleRegistryButton(){
-    let Contract = new this.web3.eth.Contract(ABI.result, addressContract);
-    Contract.methods.organizerRegistration("Cong Nghiep", "HUI").send({
-      from:'0xFDb924E9e26C1E44698737122A4bD76Aa2B82FAa',value:'2000000000000000000'
-    }).then(function (rs) {
-      console.log('Result : ',rs);
+    const {
+      codeDiploma,
+      selectedDiplomaTypeId,
+      selectedDiplomaFullName,
+      selectedDiplomaBirthDay,
+      selectedDiplomaReleaseDate,
+      diplomaStatus,
+      diplomaRank
+    } = this.state;
+    //console.log('aaaa', Contract.methods);
+    let account = await this.web3.eth.getAccounts();
+    Contract.methods.addNewDiploma(
+      parseInt(codeDiploma),
+      selectedDiplomaFullName,
+      selectedDiplomaBirthDay,
+      selectedDiplomaReleaseDate,
+      parseInt(diplomaStatus),
+      parseInt(selectedDiplomaTypeId),
+      parseInt(diplomaRank)
+    ).send({
+      from: account[0]
+    }).then((res) => {
+      alert(`You had successfully create a diploma with id: ${res.events.AddNewDiploma.returnValues._id}`);
+      this.setState({
+        modalRegistry: false
+      })
     });
   }
-  toggleModalSubmit() {
-    this.setState(prevState => ({ modalSubmit: ! prevState.modalSubmit }));
+
+  async handleRegistryButton () {
+    let Contract = new this.web3.eth.Contract(ABI.result, addressContract);
+    // console.log(this.web3.eth.accounts);
+    let account = await this.web3.eth.getAccounts();
+    Contract.methods.organizerRegistration(this.state.organizationName, this.state.organizationCode).send({
+      from: account[0],
+      value: '2000000000000000000'
+    }).then(function (rs) {
+      console.log('Result : ', rs);
+    });
+  }
+
+  toggleModalSubmit () {
+    this.setState(prevState => ({ modalSubmit: !prevState.modalSubmit }));
   }
 
   toggleDropdown = () => {
-    this.setState(prevState => ({ dropdownOpen: ! prevState.dropdownOpen }));
+    this.setState(prevState => ({ dropdownOpen: !prevState.dropdownOpen }));
+  };
+  toggleDropdown1 = () => {
+    this.setState(prevState => ({ dropdownOpen1: !prevState.dropdownOpen1 }));
+  };
+  toggleDropdown2 = () => {
+    this.setState(prevState => ({ dropdownOpen2: !prevState.dropdownOpen2 }));
+  };
+  toggleDropdown3 = () => {
+    this.setState(prevState => ({ dropdownOpen3: !prevState.dropdownOpen3 }));
   };
 
-  toggleModalRegistry() {
+  toggleModalRegistry () {
     this.setState(prevState => ({
-      modalRegistry: ! prevState.modalRegistry,
+      modalRegistry: !prevState.modalRegistry,
       organizationName: '',
       organizationCode: '',
     }));
   }
 
   toggleModalDiplomaNotFound = () => {
-    this.setState(prevState => ({ modalDiplomaNotFound: ! prevState.modalDiplomaNotFound }));
+    this.setState(prevState => ({ modalDiplomaNotFound: !prevState.modalDiplomaNotFound }));
   };
 
   toggleModalDiplomaFound = (currentDiploma) => {
-    this.setState(prevState => ({ modalDiplomaFound: ! prevState.modalDiplomaFound, currentDiploma: currentDiploma }));
+    this.setState(prevState => ({
+      modalDiplomaFound: !prevState.modalDiplomaFound,
+      currentDiploma: currentDiploma
+    }));
   };
 
-  handleButtonRegistry(){
-    // let web4 = new Web3(Web3.givenProvider || "http://localhost:3000");
-    // console.log(web4);
-    if(typeof window.web3 === 'undefined'){
+  handleButtonRegistry () {
+
+    if (typeof window.web3 === 'undefined') {
       alert('Please install MetaMask Extension before use function this.')
-    }else {
+    } else {
       this.web3 = new Web3(window.web3.currentProvider);
       this.toggleModalRegistry();
     }
   }
-  handleButtonSubmit(){
-    if(typeof window.web3 !== 'undefined'){
+
+  handleButtonSubmit () {
+    if (typeof window.web3 !== 'undefined') {
       this.web3 = new Web3(window.web3.currentProvider);
-      this.web3.eth.getAccounts((err,accounts)=>{
-        if(err){
-          alert('Error. Please try again')
-        }else{
-          if(accounts.length === 0){
-            alert('Please login MetaMask before use function this. ')
-          }else {
-            console.log(accounts[0]);
-            this.toggleModalSubmit();
+      this.web3.eth.getAccounts((err, accounts) => {
+          if (err) {
+            alert('Error. Please try again')
+          } else {
+            if (accounts.length === 0) {
+              alert('Please login MetaMask before use this function. ')
+            } else {
+              console.log(accounts[0]);
+              this.toggleModalSubmit();
+            }
           }
-        }}
+        }
       )
-    }else {
+    } else {
       alert('Please install MetaMask Extension before use function this.')
     }
   }
 
-  handleSearch() {
-    console.log('handleSearch', this.state.searchContent);
-    searchDiploma(this.state.searchContent).then( diploma => {
-      console.log('diploma found:', diploma);
-      this.toggleModalDiplomaFound(diploma);
-    }).catch(error => {
-      console.log('diploma not found:', error);
-      this.toggleModalDiplomaNotFound();
-    });
+  async handleSearch () {
+    if (typeof window.web3 !== 'undefined') {
+      this.web3 = new Web3(window.web3.currentProvider);
+      this.web3.eth.getAccounts((err, accounts) => {
+          if (err) {
+            alert('Error. Please try again')
+          } else {
+            if (accounts.length === 0) {
+              alert('Please login MetaMask before use this function. ')
+            } else {
+              console.log('Account : ', accounts[0]);
+              console.log(this.state.searchContent);
+              let Contract = new this.web3.eth.Contract(ABI.result, addressContract);
+              Contract.methods.searchDiplomaByID(this.state.searchContent).send({
+                from: accounts[0]
+              }).then((rs) =>{
+                console.log('Result : ', rs);
+                if (!rs.events){
+                  this.toggleModalDiplomaNotFound();
+                }
+                const {returnValues} = rs.events.SearchDiplomaByID;
+                this.toggleModalDiplomaFound({
+                  birthDay: returnValues.birthDay,
+                  date: returnValues.date,
+                  diplomaId: returnValues.diplomaStatus,
+                  fullName: returnValues.fullName,
+                  id: returnValues.id,
+                  organizer: returnValues.organizer,
+                  rank: returnValues.rank,
+                  status: returnValues.status,
+                  _type: returnValues._type,
+                });
+              });
+            }
+          }
+        }
+      )
+    } else {
+      alert('Please install MetaMask Extension before use function this.')
+    }
   };
 
-  handleSearchChange(e) {
-    this.setState({searchContent: e.target.value});
+  handleSearchChange (e) {
+    this.setState({ searchContent: e.target.value });
   };
 
   handleKeyPress = (e) => {
@@ -140,6 +229,26 @@ class HomePage extends Component {
       e.preventDefault();
       this.handleSearch();
     }
+  };
+  handleDiplomaStatusChange = e => {
+    this.setState({
+      diplomaStatus: diplomaStatus[e]
+    })
+  };
+
+  handleDiploma1StatusChange = e => {
+    this.setState({
+      diplomaStatus1: diplomaStatus[e]
+    })
+  };
+
+  handleDiplomaIdDegreeChange = (e) => {
+    this.setState({ codeDiploma: e.target.value });
+  };
+
+  handleDiplomaRankChange = (e) => {
+    console.log(e);
+    this.setState({ diplomaRank: diplomaRank[e] });
   };
 
   handleOrganizationNameChange = (e) => {
@@ -152,10 +261,10 @@ class HomePage extends Component {
 
   handleSelectDiplomaType = (diplomaTypeId) => {
     console.log('handleSelectDiplomaType:', diplomaTypeId);
-    this.setState({ selectedDiplomaTypeId: diplomaTypeId });
+    this.setState({ selectedDiplomaTypeId: diplomaTypes[diplomaTypeId] });
   };
 
-  renderModalRegistry() {
+  renderModalRegistry () {
     return (
       <Modal isOpen={this.state.modalRegistry} toggle={this.toggleModalSubmit}>
         <ModalHeader toggle={this.toggleModalRegistry}>Registry your organization</ModalHeader>
@@ -163,11 +272,13 @@ class HomePage extends Component {
           <Form>
             <FormGroup>
               <Label for="organizationName">Organization Name</Label>
-              <Input onChange={this.handleOrganizationNameChange} type="text" name="organizationName" id="organizationName" placeholder="Your organization?" />
+              <Input onChange={this.handleOrganizationNameChange} type="text" name="organizationName"
+                     id="organizationName" placeholder="Your organization?"/>
             </FormGroup>
             <FormGroup>
               <Label for="organizationCode">Organization Code</Label>
-              <Input onChange={this.handleOrganizationCodeChange} type="text" name="organizationCode" id="organizationCode" placeholder="Your code?" />
+              <Input onChange={this.handleOrganizationCodeChange} type="text" name="organizationCode"
+                     id="organizationCode" placeholder="Your code?"/>
             </FormGroup>
           </Form>
         </ModalBody>
@@ -191,37 +302,85 @@ class HomePage extends Component {
     this.setState({ selectedDiplomaReleaseDate: e.target.value });
   };
 
-  renderModalSubmit() {
+  renderModalSubmit () {
     return <Modal isOpen={this.state.modalSubmit} toggle={this.handleButtonSubmit}>
       <ModalHeader toggle={this.toggleModalSubmit}>Submit new Diploma</ModalHeader>
       <ModalBody>
         <Form>
           <FormGroup>
             <Label for="diplomaFullName">Full name</Label>
-            <Input onChange={this.handleDiplomaFullNameChange} type="text" name="diplomaFullName" id="diplomaFullName" placeholder="Full name?" />
+            <Input onChange={this.handleDiplomaFullNameChange} type="text" name="diplomaFullName" id="diplomaFullName"
+                   placeholder="Full name?"/>
           </FormGroup>
           <FormGroup>
             <Label for="diplomaBirthDay">Birth day</Label>
-            <Input onChange={this.handleDiplomaBirthDayChange} type="text" name="diplomaBirthDay" id="diplomaBirthDay" placeholder="Birth day?" />
+            <Input onChange={this.handleDiplomaBirthDayChange} type="text" name="diplomaBirthDay" id="diplomaBirthDay"
+                   placeholder="Birth day?"/>
           </FormGroup>
           <FormGroup>
             <Label for="diplomaReleaseDate">Release date</Label>
-            <Input onChange={this.handleDiplomaReleaseDateChange} type="text" name="diplomaReleaseDate" id="diplomaReleaseDate" placeholder="Release date?" />
+            <Input onChange={this.handleDiplomaReleaseDateChange} type="text" name="diplomaReleaseDate"
+                   id="diplomaReleaseDate" placeholder="Release date?"/>
+          </FormGroup>
+          <FormGroup>
+            <Label for="diplomaReleaseDate">ID Degree</Label>
+            <Input onChange={this.handleDiplomaIdDegreeChange} type="text" name="idDegree"
+                   id="diplomaReleaseDate" placeholder="Id of degree?"/>
           </FormGroup>
           <FormGroup>
             <Label for="diplomaType">Diploma type</Label>
             <Dropdown isOpen={this.state.dropdownOpen} toggle={this.toggleDropdown}>
               <DropdownToggle caret>
-                Diploma types
+                {Object.keys(diplomaTypes).find(key => diplomaTypes[key] === this.state.selectedDiplomaTypeId)}
               </DropdownToggle>
               <DropdownMenu>
                 {
-                  diplomaTypes.map(diplomaType => (
+                  Object.keys(diplomaTypes).map(key => (
                     <DropdownItem
-                      key={diplomaType.id}
-                      active={this.state.selectedDiplomaTypeId === diplomaType.id}
-                      onClick={this.handleSelectDiplomaType.bind(this, diplomaType.id)}>
-                      {diplomaType.name}
+                      key={key}
+                      active={this.state.selectedDiplomaTypeId === key}
+                      onClick={this.handleSelectDiplomaType.bind(this, key)}>
+                      {key}
+                    </DropdownItem>
+                  ))
+                }
+              </DropdownMenu>
+            </Dropdown>
+          </FormGroup>
+          <FormGroup>
+            <Label for="diplomaRank">Diploma rank</Label>
+            <Dropdown isOpen={this.state.dropdownOpen1} toggle={this.toggleDropdown1}>
+              <DropdownToggle caret>
+                {Object.keys(diplomaRank).find(key => diplomaRank[key] === this.state.diplomaRank)}
+              </DropdownToggle>
+              <DropdownMenu>
+                {
+                  Object.keys(diplomaRank).map(key => (
+                    <DropdownItem
+                      key={key}
+                      active={this.state.diplomaRank === key}
+                      onClick={this.handleDiplomaRankChange.bind(this, key)}>
+                      {key}
+                    </DropdownItem>
+                  ))
+                }
+              </DropdownMenu>
+            </Dropdown>
+          </FormGroup>
+          <FormGroup>
+            <Label for="diplomaStatus">Diploma Status</Label>
+            <Dropdown isOpen={this.state.dropdownOpen2} toggle={this.toggleDropdown2}>
+              <DropdownToggle caret>
+                {Object.keys(diplomaStatus).find(key => diplomaStatus[key] === this.state.diplomaStatus)}
+              </DropdownToggle>
+              <DropdownMenu>
+                {
+                  Object.keys(diplomaStatus).map(key => (
+                    <DropdownItem
+                      key={key}
+                      active={this.state.diplomaStatus === key}
+                      onClick={this.handleDiplomaStatusChange.bind(this, key)}>
+                      {key}
                     </DropdownItem>
                   ))
                 }
@@ -231,15 +390,15 @@ class HomePage extends Component {
         </Form>
       </ModalBody>
       <ModalFooter>
-        <Button color="primary" onClick={this.handleSubmit}>Submit</Button>{' '}
+        <Button color="primary" onClick={this.handleSubmitButton}>Submit</Button>{' '}
         <Button color="secondary" onClick={this.toggleModalSubmit}>Cancel</Button>
       </ModalFooter>
     </Modal>;
   }
 
-  renderModalDiplomaFound() {
+  renderModalDiplomaFound () {
     const { currentDiploma } = this.state;
-    if ( ! currentDiploma ) {
+    if (!currentDiploma) {
       console.log('currentDiploma is not defined');
       return null;
     }
@@ -248,26 +407,39 @@ class HomePage extends Component {
       <ModalBody>
         <Table>
           <tbody>
-            <tr>
-              <th scope="row">From:</th>
-              <td>{currentDiploma.organizer}</td>
-            </tr>
-            <tr>
-              <th scope="row">For:</th>
-              <td>{currentDiploma.fullName}</td>
-            </tr>
-            <tr>
-              <th scope="row">Birth day:</th>
-              <td>{currentDiploma.birthDay}</td>
-            </tr>
-            <tr>
-              <th scope="row">Release date:</th>
-              <td>{currentDiploma.date}</td>
-            </tr>
-            <tr>
-              <th scope="row">Type:</th>
-              <td>{currentDiploma._type}</td>
-            </tr>
+          <tr>
+            <th scope="row">Id:</th>
+            <td>{currentDiploma.id}</td>
+          </tr>
+          <tr>
+            <th scope="row">From:</th>
+            <td>{currentDiploma.organizer}</td>
+          </tr>
+          <tr>
+            <th scope="row">For:</th>
+            <td>{currentDiploma.fullName}</td>
+          </tr>
+          <tr>
+            <th scope="row">Birth day:</th>
+            <td>{currentDiploma.birthDay}</td>
+          </tr>
+          <tr>
+            <th scope="row">Release date:</th>
+            <td>{currentDiploma.date}</td>
+          </tr>
+          <tr>
+            <th scope="row">Type:</th>
+            <td>{Object.keys(diplomaTypes).find(key => diplomaStatus[key] ==currentDiploma._type)}</td>
+          </tr>
+          <tr>
+            <th scope="row">Status:</th>
+            <td>{Object.keys(diplomaStatus).find(key => diplomaStatus[key] ==currentDiploma.status)}</td>
+
+          </tr>
+          <tr>
+            <th scope="row">Rank:</th>
+            <td>{Object.keys(diplomaRank).find(key => diplomaStatus[key] ==currentDiploma.rank)}</td>
+          </tr>
           </tbody>
         </Table>
       </ModalBody>
@@ -277,7 +449,7 @@ class HomePage extends Component {
     </Modal>;
   }
 
-  renderNotFoundDiploma() {
+  renderNotFoundDiploma () {
     return (
       <Modal isOpen={this.state.modalDiplomaNotFound} toggle={this.toggleModalDiplomaNotFound}>
         <ModalHeader toggle={this.toggleModalDiplomaNotFound}>Diploma not found</ModalHeader>
@@ -291,38 +463,141 @@ class HomePage extends Component {
     );
   }
 
-  render() {
+  toggleModalUpdate = () => {
+    this.setState(prevState => ({
+      updateModalOpen: !prevState.updateModalOpen
+    }))
+  };
+
+  handleChangeIdUpdate = (e) => {
+    this.setState({
+      updateId: e.target.value
+    })
+  };
+
+  renderUpdateModal () {
     return (
-      <header className="App-header">
-        <div className="Header-btns">
-          <Button outline color="secondary" size="sm" className="Header-btn" onClick={this.handleButtonSubmit}>Submit new Diploma</Button>
-          <Button color="primary" size="sm" className="Header-btn" onClick={this.handleButtonRegistry}>Registry</Button>
-        </div>
-        <img src="https://knownetwork.io/images/logo-white2x.png" className="App-logo" alt="logo" />
-        <InputGroup className="Search-bar">
-          <Input value={this.state.searchContent} onKeyPress={this.handleKeyPress} onChange={this.handleSearchChange}/>
-          <InputGroupAddon onClick={this.handleSearch} addonType="append" className="Search-icon">
-            <InputGroupText>
-              <img src={search} alt="Search icon"/>
-            </InputGroupText>
-          </InputGroupAddon>
-        </InputGroup>
-        <span className="App-link">
+      <Modal isOpen={this.state.updateModalOpen} toggle={this.toggleModalUpdate}>
+        <ModalHeader>Update Diploma</ModalHeader>
+        <ModalBody>
+          <Form>
+            <FormGroup>
+              <Label for="Diplomaid">Diploma id</Label>
+              <Input onChange={this.handleChangeIdUpdate} type="text"
+                     name="Diplomaid" id="Diplomaid"
+                     placeholder="Id?"/>
+            </FormGroup>
+            <FormGroup>
+              <Label for="diplomaStatus">New Diploma Status</Label>
+              <Dropdown isOpen={this.state.dropdownOpen3} toggle={this.toggleDropdown3}>
+                <DropdownToggle caret>
+                  {Object.keys(diplomaStatus).find(key => diplomaStatus[key] === this.state.diplomaStatus1)}
+                </DropdownToggle>
+                <DropdownMenu>
+                  {
+                    Object.keys(diplomaStatus).map(key => (
+                      <DropdownItem
+                        key={key}
+                        active={this.state.diplomaStatus1 === key}
+                        onClick={this.handleDiploma1StatusChange.bind(this, key)}>
+                        {key}
+                      </DropdownItem>
+                    ))
+                  }
+                </DropdownMenu>
+              </Dropdown>
+            </FormGroup>
+          </Form>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="secondary" onClick={this.toggleModalUpdate}>Cancel</Button>
+          <Button color="secondary" onClick={this.handleUpdateDiploma}>Update</Button>
+        </ModalFooter>
+      </Modal>
+    );
+  }
+
+  handleUpdateDiploma = async () => {
+    if (typeof window.web3 !== 'undefined') {
+      this.web3 = new Web3(window.web3.currentProvider);
+      this.web3.eth.getAccounts((err, accounts) => {
+          if (err) {
+            alert('Error. Please try again')
+          } else {
+            if (accounts.length === 0) {
+              alert('Please login MetaMask before use this function. ')
+            } else {
+              let Contract = new this.web3.eth.Contract(ABI.result, addressContract);
+              Contract.methods.updateDiploma(this.state.updateId, this.state.diplomaStatus1).send({
+                from: accounts[0]
+              }).then((rs)=> {
+                console.log('update result : ', rs);
+                if (rs.events) alert(`update for diploma id:${this.state.updateId}`);
+                this.setState({
+                  updateId: '',
+                  diplomaStatus1: diplomaStatus['Activated']
+                })
+              });
+            }
+          }
+        }
+      )
+    } else {
+      alert('Please install MetaMask Extension before use function this.')
+    }
+
+  };
+
+  render () {
+
+    return (
+      <div style={{ position: 'relative' }}>
+        <header className="App-header">
+          <div className="Header-btns">
+            <Button outline
+                    color="primary"
+                    size="sm"
+                    className="Header-btn"
+                    onClick={this.toggleModalUpdate}
+            >Update diploma</Button>
+            <Button outline color="primary" size="sm"
+                    className="Header-btn"
+                    onClick={this.handleButtonSubmit}>Submit
+              new Diploma</Button>
+            <Button color="primary" size="sm" className="Header-btn"
+                    onClick={this.handleButtonRegistry}>Register</Button>
+          </div>
+          <img src="https://knownetwork.io/images/logo-white2x.png" className="App-logo" alt="logo"/>
+          <InputGroup className="Search-bar">
+            <Input value={this.state.searchContent} onKeyPress={this.handleKeyPress}
+                   onChange={this.handleSearchChange}/>
+            <InputGroupAddon onClick={this.handleSearch} addonType="append" className="Search-icon">
+              <InputGroupText>
+                <img src={search} alt="Search icon"/>
+              </InputGroupText>
+            </InputGroupAddon>
+          </InputGroup>
+          <span className="App-link">
           Search for Distributed Certifications and Degrees
         </span>
-        {
-          this.renderModalSubmit()
-        }
-        {
-          this.renderModalRegistry()
-        }
-        {
-          this.renderNotFoundDiploma()
-        }
-        {
-          this.renderModalDiplomaFound()
-        }
-      </header>
+          {
+            this.renderModalSubmit()
+          }
+          {
+            this.renderModalRegistry()
+          }
+          {
+            this.renderNotFoundDiploma()
+          }
+          {
+            this.renderModalDiplomaFound()
+          }
+          {
+            this.renderUpdateModal()
+          }
+        </header>
+
+      </div>
     );
   }
 }
